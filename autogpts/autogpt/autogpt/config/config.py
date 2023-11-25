@@ -125,6 +125,8 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     use_azure: bool = False
     azure_config_file: Optional[Path] = project_root / AZURE_CONFIG_FILE
     azure_model_to_deployment_id_map: Optional[Dict[str, str]] = None
+    web_allowlist: list[str] = Field(default_factory=list)
+    web_denylist: list[str] = Field(default_factory=list)
     # Github
     github_api_key: Optional[str] = None
     github_username: Optional[str] = None
@@ -221,8 +223,21 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
 class ConfigBuilder(Configurable[Config]):
     default_settings = Config()
 
+    def read_list_from_file(file_path):
+        if not file_path:
+            return []
+        try:
+            with open(file_path, 'r') as file:
+                return file.read().splitlines()
+        except FileNotFoundError:
+            print(f"File not found: {file_path}")
+            return []
+
     @classmethod
     def build_config_from_env(cls, project_root: Path = PROJECT_ROOT) -> Config:
+        web_allowlist_path = os.getenv("WEB_ALLOWLIST_PATH")
+        web_denylist_path = os.getenv("WEB_DENYLIST_PATH")
+
         """Initialize the Config class"""
         config_dict = {
             "project_root": project_root,
@@ -253,6 +268,9 @@ class ConfigBuilder(Configurable[Config]):
             "github_api_key": os.getenv("GITHUB_API_KEY"),
             "github_username": os.getenv("GITHUB_USERNAME"),
             "google_api_key": os.getenv("GOOGLE_API_KEY"),
+            "web_security_policy": os.getenv("WEB_SECURITY_POLICY"),
+            "web_allowlist": read_list_from_file(web_allowlist_path),
+            "web_denylist": read_list_from_file(web_denylist_path),
             "image_provider": os.getenv("IMAGE_PROVIDER"),
             "huggingface_api_token": os.getenv("HUGGINGFACE_API_TOKEN"),
             "huggingface_image_model": os.getenv("HUGGINGFACE_IMAGE_MODEL"),

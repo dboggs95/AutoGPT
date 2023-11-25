@@ -86,6 +86,22 @@ async def read_webpage(url: str, agent: Agent, question: str = "") -> str:
     """
     driver = None
     try:
+        web_security_policy = agent.legacy_config.get('web_security_policy', 'deny')
+        web_allowlist = agent.legacy_config.get('web_allowlist', [])
+        web_denylist = agent.legacy_config.get('web_denylist', [])
+
+        # Whitelist check
+        if web_security_policy == 'allow':
+            if url not in web_allowlist:
+                print(f"URL '{url}' is not in the allowlist.")
+                return
+
+        # Blacklist check
+        elif web_security_policy == 'deny':
+            if url in web_denylist:
+                print(f"URL '{url}' is in the denylist.")
+                return
+
         # FIXME: agent.config -> something else
         driver = open_page_in_browser(url, agent.legacy_config)
 
